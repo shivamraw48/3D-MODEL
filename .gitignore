@@ -6,4 +6,4 @@ backend/node_modules/
 # Environment variables
 backend/.env
 backend/package-lock
-backend/package
+
