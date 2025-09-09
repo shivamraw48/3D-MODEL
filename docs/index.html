@@ -6,15 +6,12 @@
     <title>Image-to-Image Generation with Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Image Compression Library -->
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
-    <!-- Supabase Client Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script type="module">
         const { createClient } = supabase;
 
-        // --- Supabase Configuration ---
         const SUPABASE_URL = 'https://ymriieaiqeuqatmfrpjh.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltcmlpZWFpcWV1cWF0bWZycGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczOTYzNzMsImV4cCI6MjA3Mjk3MjM3M30.MOOA7acJ6vTesnzZu3lqPcEm-FzUO-34mLbEdchus-0';
 
@@ -183,10 +180,8 @@
         });
 
         async function generateImageWithRetry(payload) {
-            // When deploying, this URL must point to your live backend server (e.g., on Render)
-            // For local development, you can use 'http://localhost:3000/generate'
-            // For production, use your deployed backend URL.
-            const apiUrl = `https://threed-model-efl1.onrender.com/generate`; // <-- IMPORTANT: REPLACE THIS URL
+            
+            const apiUrl = `https://threed-model-efl1.onrender.com/generate`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
