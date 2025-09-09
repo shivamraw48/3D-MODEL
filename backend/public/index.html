@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image-to-Image Generation with Supabase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Image Compression Library -->
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script type="module">
+        const { createClient } = supabase;
+
+        // --- Supabase Configuration ---
+        const SUPABASE_URL = 'https://ymriieaiqeuqatmfrpjh.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltcmlpZWFpcWV1cWF0bWZycGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczOTYzNzMsImV4cCI6MjA3Mjk3MjM3M30.MOOA7acJ6vTesnzZu3lqPcEm-FzUO-34mLbEdchus-0';
+
+        let supabaseClient;
+        try {
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log("Supabase client initialized successfully.");
+            document.getElementById('generate-btn').disabled = false;
+            document.getElementById('generate-btn').textContent = 'Generate Image';
+        } catch (e) {
+            console.error("Supabase initialization failed:", e);
+            showToast(`Supabase Connection Failed: ${e.message}`, false);
+            document.getElementById('generate-btn').textContent = 'Connection Failed';
+        }
+
+        window.saveUploadForRecord = async (fileObject, promptText) => {
+            if (!supabaseClient) {
+                showToast("Cannot save record. Supabase client not ready.", false);
+                return;
+            }
+            if (!fileObject) {
+                console.log("No file object provided to save.");
+                return;
+            }
+            try {
+                
+                
+                const filePath = `public/uploads/${Date.now()}-${fileObject.name}`;
+                const { data: uploadData, error: uploadError } = await supabaseClient
+                    .storage
+                    .from('user_uploads')
+                    .upload(filePath, fileObject);
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabaseClient
+                    .storage
+                    .from('user_uploads')
+                    .getPublicUrl(filePath);
+
+                const { error: insertError } = await supabaseClient
+                    .from('uploads')
+                    .insert([{ 
+                        prompt: promptText, 
+                        image_url: urlData.publicUrl 
+                    }]);
+
+                if (insertError) throw insertError;
+
+                console.log("Record saved successfully!");
+                
+
+            } catch (error) {
+                console.error("CRITICAL ERROR saving record:", error);
+                showToast(`Failed to save record. Check Supabase policies. Error: ${error.message}`, false);
+            }
+        };
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #111827; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(20px); animation: slide-in 0.3s forwards, slide-out 0.3s forwards 3s; }
+        .toast-success { background-color: #28a745; }
+        .toast-error { background-color: #dc3545; }
+        @keyframes slide-in { to { opacity: 1; transform: translateY(0); } }
+        @keyframes slide-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center min-h-screen py-10">
+    
+    <div id="toast-container"></div>
+
+    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-4xl mx-4">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white">Image-to-Image Generation</h1>
+            <p class="text-gray-400 mt-2">Upload an image, provide a prompt, and let the AI bring your idea to life.</p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="space-y-6">
+                <div>
+                    <label class="text-lg font-semibold mb-2 block">1. Input Image</label>
+                    <div class="file-input-wrapper w-full h-64 bg-gray-700 rounded-lg relative">
+                        <label for="image-upload" id="upload-label" class="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-blue-500">
+                            <svg class="w-12 h-12 mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V6a4 4 0 014-4h10a4 4 0 014 4v6a4 4 0 01-4 4H7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 16v1a2 2 0 01-2 2H8a2 2 0 01-2-2v-1m10-4l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <span class="font-semibold">Click to upload</span>
+                        </label>
+                        <input type="file" id="image-upload" accept="image/*" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+                        <div id="image-preview-container" class="absolute top-0 left-0 w-full h-full p-2 hidden">
+                           <img id="image-preview" src="" alt="Image preview" class="max-w-full max-h-full object-contain rounded-lg">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label for="prompt" class="text-lg font-semibold mb-2 block">2. Your Prompt</label>
+                    <textarea id="prompt" rows="8" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3"></textarea>
+                </div>
+                <button id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg" disabled>Connecting...</button>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-lg font-semibold mb-2 block">3. Generated Result</label>
+                <div id="output-container" class="flex-grow bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600">
+                    <div id="output-placeholder" class="text-center text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p>Your generated image will appear here</p>
+                    </div>
+                     <div id="loader" class="loader hidden"></div>
+                     <img id="output-image" class="hidden rounded-lg max-w-full max-h-full object-contain" alt="Generated Image">
+                     <p id="error-message" class="text-red-400 p-4 hidden"></p>
+                </div>
+                <button id="download-btn" class="hidden mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Download Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('image-upload');
+        const uploadLabel = document.getElementById('upload-label');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const promptInput = document.getElementById('prompt');
+        const generateBtn = document.getElementById('generate-btn');
+        const outputImage = document.getElementById('output-image');
+        const downloadBtn = document.getElementById('download-btn');
+        const loader = document.getElementById('loader');
+        const outputPlaceholder = document.getElementById('output-placeholder');
+        
+        let imageBase64 = null;
+        let imageFile = null;
+
+        function showToast(message, isSuccess = true) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.className = isSuccess ? 'toast toast-success' : 'toast toast-error';
+            toastContainer.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3300);
+        }
+
+        window.onload = () => {
+             promptInput.value = `Using the nano-banana model, create a 1/7 scale commercialized figurine of the characters in the picture in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is the brush modeling process of this figurine. Packaging box printed with the original art, The packaging features two-dimensional flat illustrations. Please turn this photo into a figure. Behind it, there should be a Model packaging box with the character from this photo printed on it. In front of the box on a round plastic baseplate the figure version of the photo I gave you. I'd like the PVC material to be clearly represented. It would be even better if the background is indoors.`;
+        };
+
+        imageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const options = { maxSizeMB: 0.9, maxWidthOrHeight: 1024, useWebWorker: true };
+            try {
+                const compressedFile = await imageCompression(file, options);
+                imageFile = compressedFile;
+                
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result;
+                    imagePreview.src = base64String;
+                    imageBase64 = base64String.split(',')[1];
+                    uploadLabel.classList.add('hidden');
+                    imagePreviewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(compressedFile);
+            } catch (error) {
+                showToast('Could not process the image.', false);
+            }
+        });
+
+        async function generateImageWithRetry(payload) {
+            // The API call is now proxied through our own backend to protect the key
+            const apiUrl = `/generate`; // Use a relative path
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) throw new Error((await response.json()).error?.message || `API Error: ${response.statusText}`);
+            return await response.json();
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            if (!imageFile || !imageBase64) {
+                showToast('Please upload an image first.', false);
+                return;
+            }
+            if (!prompt) {
+                showToast('Please enter a prompt.', false);
+                return;
+            }
+            
+            if (window.saveUploadForRecord) {
+                await window.saveUploadForRecord(imageFile, prompt);
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            loader.classList.remove('hidden');
+            outputPlaceholder.classList.add('hidden');
+            outputImage.classList.add('hidden');
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }, { inlineData: { mimeType: imageFile.type, data: imageBase64 }}]
+                }],
+                generationConfig: { responseModalities: ['IMAGE'] },
+            };
+
+            try {
+                const result = await generateImageWithRetry(payload);
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                if (base64Data) {
+                    outputImage.src = `data:image/png;base64,${base64Data}`;
+                    outputImage.classList.remove('hidden');
+                    downloadBtn.classList.remove('hidden');
+                } else {
+                    showToast('Failed to generate image from API response.', false);
+                    outputPlaceholder.classList.remove('hidden');
+                }
+            } catch (error) {
+                showToast(`An error occurred: ${error.message}`, false);
+                outputPlaceholder.classList.remove('hidden');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Image';
+                loader.classList.add('hidden');
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = outputImage.src;
+            link.download = 'generated-image.png';
+            link.click();
+        });
+    </script>
+</body>
+</html>
