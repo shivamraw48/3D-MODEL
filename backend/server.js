@@ -19,7 +19,7 @@ app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json({ limit: '10mb' })); // Allow large JSON payloads for image data
 
 // Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'docs')));
 
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) {
