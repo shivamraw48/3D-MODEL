@@ -183,8 +183,10 @@
         });
 
         async function generateImageWithRetry(payload) {
-            // The API call is now proxied through our own backend to protect the key
-            const apiUrl = `/generate`; // Use a relative path
+            // When deploying, this URL must point to your live backend server (e.g., on Render)
+            // For local development, you can use 'http://localhost:3000/generate'
+            // For production, use your deployed backend URL.
+            const apiUrl = `https://threed-model-efl1.onrender.com/generate`; // <-- IMPORTANT: REPLACE THIS URL
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

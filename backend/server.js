@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,8 +18,8 @@ const port = process.env.PORT || 3000;
 app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json({ limit: '10mb' })); // Allow large JSON payloads for image data
 
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the 'docs' directory, which contains your index.html
+app.use(express.static(path.join(__dirname, '..', 'docs')));
 
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) {
